@@ -21,6 +21,17 @@ bdd.convertTokenbyId = function(token) {
         })
     })
 }
+bdd.getRefreshTokenAndId = function(token) {
+    return new Promise(function(resolve, reject) {
+        console.log(token)
+        bdd.query("SELECT refresh_token,user_id FROM tokens WHERE token = '" + token + "'", function(err, result) {
+            let reponse = {}
+            reponse.error = (err | result == null) ? true : false
+            reponse.data = result;
+            resolve(reponse)
+        })
+    })
+}
 bdd.getJsonUsers = function() {
     return new Promise(function(resolve, reject) {
         bdd.query("SELECT firstname,lastname,date_naissance,sexe FROM users", function(err, result) {
@@ -36,6 +47,18 @@ bdd.getJsonUser = function(user_id) {
     console.log(user_id)
     return new Promise(function(resolve, reject) {
         bdd.query("SELECT * FROM users WHERE user_id = '" + user_id + "'", function(err, result) {
+            let reponse = {}
+            reponse.error = (err | result == null) ? true : false
+            reponse.data = result;
+            resolve(reponse)
+        })
+    })
+}
+bdd.disconnectUser = function(token) {
+    console.log(token)
+    return new Promise(function(resolve, reject) {
+        console.log("update tokens set refresh_token = '1900-01-01T00:00:00' WHERE token = '" + token + "'")
+        bdd.query("update tokens set refresh_token = '1900-01-01T00:00:00' WHERE token = '" + token + "'", function(err, result) {
             let reponse = {}
             reponse.error = (err | result == null) ? true : false
             reponse.data = result;
@@ -81,12 +104,42 @@ bdd.loginresponse = function(email,password) {
         })
     })
 }
+
+bdd.updateUser = function(user, user_id){
+    console.log("updateusermeth")
+    return new Promise(function(resolve, reject){
+        console.log("theuser",user)
+        bdd.query('UPDATE users SET ? where user_id = ?', [user, user_id], function(err, result){
+            let token = Math.random().toString(36).substr(2);
+            console.log(err)
+            console.log(result)
+            let theToken = {
+                token : token,
+                refresh_token: new Date(),
+                revoquer: false
+            }
+            bdd.query('UPDATE tokens SET ? where user_id = ?', [theToken, user_id] , function(err, result){
+            let response = {}
+            console.log(theToken)
+            response.error = (err | result == null) ? true : false
+            response.data = {
+                token: token,
+                refresh_token : theToken.refresh_token
+            };
+            resolve(response)
+            })
+        })
+    })
+}
+
 bdd.registerUser = function(user){
     console.log("registerusermeth")
     return new Promise(function(resolve, reject){
         console.log("theuser",user)
         bdd.query('INSERT INTO users SET?', user, function(err, result){
             let token = Math.random().toString(36).substr(2);
+            console.log(err)
+            console.log(result)
             let theToken = {
                 token : token,
                 user_id: result.insertId,
